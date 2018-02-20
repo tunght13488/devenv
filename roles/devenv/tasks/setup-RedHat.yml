@@ -1,0 +1,36 @@
+---
+- name: Upgrade all packages
+  become: yes
+  yum:
+    name: '*'
+    state: latest
+    update_cache: yes
+
+- name: Define repos.
+  set_fact:
+    repos: "{{ __repos }}"
+  when: repos is not defined
+
+- name: Install repos
+  become: yes
+  yum:
+    name: '{{ item.url }}'
+    state: present
+  with_items: '{{ repos }}'
+
+- name: Import repos's GPG key.
+  become: yes
+  rpm_key:
+    key: "{{ item.key }}"
+    state: present
+  with_items: '{{ repos }}'
+
+- name: Define common_packages.
+  set_fact:
+    common_packages: "{{ __common_packages }}"
+  when: common_packages is not defined
+
+- name: Install common packages.
+  become: yes
+  yum: "name={{ item }} state=latest"
+  with_items: '{{common_packages}}'

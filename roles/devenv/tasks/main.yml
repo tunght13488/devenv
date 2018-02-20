@@ -1,0 +1,16 @@
+---
+# - name: Test connection
+#   ping:
+#   tags:
+#     - ping
+
+- name: Display all variables/facts known for a host
+  debug: var=hostvars[inventory_hostname] verbosity=1
+  tags:
+    - debug
+
+- include_vars: '{{ ansible_distribution }}.yml'
+
+- include_tasks: setup-{{ ansible_distribution }}.yml
+  tags:
+    - common

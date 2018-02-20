@@ -1,0 +1,10 @@
+---
+- name: Setup users
+  become: yes
+  user: "name={{item.username}} append=yes groups={{item.groups}} password={{item.password}}"
+  with_items: '{{users}}'
+
+- name: Setup users's authorized key
+  become: yes
+  authorized_key: "user={{item.user}} state=present key={{item.key}}"
+  with_items: '{{authorized_keys}}'

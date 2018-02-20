@@ -1,0 +1,91 @@
+---
+- include_vars: 'tmux.yml'
+  tags:
+    - tmux
+
+- name: See if tmux is installed
+  shell: which tmux
+  register: tmux_installed
+  ignore_errors: yes
+
+- name: See if tmux is installed in /usr/local/bin
+  shell: which /usr/local/bin/tmux
+  register: tmux_installed
+  ignore_errors: yes
+  when: tmux_installed|failed
+
+- name: Install build tools
+  become: yes
+  yum: name={{ item }} state=latest
+  with_items:
+  - gcc
+  - kernel-devel
+  - make
+  - ncurses-devel
+  when: tmux_installed|failed
+
+- name: Create temporary directory for libevent build
+  shell: mktemp -d
+  register: libevent_temp_dir
+  when: tmux_installed|failed
+
+- name: Download libevent source
+  get_url: url={{ libevent_src_url }} dest={{ libevent_temp_dir.stdout }}/{{ libevent_package }}
+  when: tmux_installed|failed
+
+- name: Extract libevent source
+  shell: >
+    chdir={{ libevent_temp_dir.stdout }}
+    tar xzf {{ libevent_package }}
+  when: tmux_installed|failed
+
+- name: Make libevent
+  shell: >
+    chdir={{ libevent_temp_dir.stdout }}/{{ libevent_src_dir }}
+    ./configure --prefix=/usr/local
+    && make
+  when: tmux_installed|failed
+
+- name: Install libevent
+  become: yes
+  shell: >
+    chdir={{ libevent_temp_dir.stdout }}/{{ libevent_src_dir }}
+    make install
+  when: tmux_installed|failed
+
+- name: Delete temporary directory for libevent build
+  shell: rm -rf {{ libevent_temp_dir.stdout }}
+  when: tmux_installed|failed
+
+- name: Create temporary directory for tmux build
+  shell: mktemp -d
+  register: tmux_temp_dir
+  when: tmux_installed|failed
+
+- name: Download tmux source
+  get_url: url={{ tmux_src_url }} dest={{ tmux_temp_dir.stdout }}/{{ tmux_package }}
+  when: tmux_installed|failed
+
+- name: Extract tmux source
+  shell: >
+    chdir={{ tmux_temp_dir.stdout }}
+    tar xzf {{ tmux_package }}
+  when: tmux_installed|failed
+
+- name: Make tmux
+  shell: >
+    chdir={{ tmux_temp_dir.stdout }}/{{ tmux_src_dir }}
+    LDFLAGS="-L/usr/local/lib -Wl,-rpath=/usr/local/lib" ./configure --prefix=/usr/local
+    && make
+  when: tmux_installed|failed
+
+- name: Install tmux
+  become: yes
+  shell: >
+    chdir={{ tmux_temp_dir.stdout }}/{{ tmux_src_dir }}
+    make install
+  when: tmux_installed|failed
+
+- name: Delete temporary directory for tmux build
+  shell: rm -rf {{ tmux_temp_dir.stdout }}
+  when: tmux_installed|failed

@@ -1,0 +1,21 @@
+- name: Install Sublime Text GPG key
+  become: yes
+  shell: curl -O https://download.sublimetext.com/sublimehq-pub.gpg && pacman-key --add sublimehq-pub.gpg && pacman-key --lsign-key 8A8F901A && rm sublimehq-pub.gpg
+
+- name: Setup Sublime Text repo
+  become: yes
+  copy:
+    src: sublimetext.conf
+    dest: /etc/pacman.d/sublimetext.conf
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Ensure "fav=lemonade is in section "[drinks]" in specified file
+  become: yes
+  ini_file:
+    path: /etc/pacman.conf
+    section: options
+    option: Include
+    value: /etc/pacman.d/sublimetext.conf
+    backup: yes

@@ -1,0 +1,73 @@
+---
+- shell: "echo $HOME"
+  register: home_directory
+
+- name: Clone dotfiles
+  git:
+    repo: https://github.com/tunght13488/dotfiles.git
+    dest: "{{ home_directory.stdout }}/dotfiles"
+  ignore_errors: yes
+
+- name: Clone tmux plugin manager
+  git:
+    repo: https://github.com/tmux-plugins/tpm.git
+    dest: "{{ home_directory.stdout }}/.tmux/plugins/tpm"
+
+- name: Clone Zsh NVM
+  git:
+    repo: https://github.com/lukechilds/zsh-nvm.git
+    dest: "{{ home_directory.stdout }}/.zsh-nvm"
+
+- name: Clone npm completion
+  git:
+    repo: https://github.com/lukechilds/zsh-better-npm-completion.git
+    dest: "{{ home_directory.stdout }}/.zsh-better-npm-completion"
+
+- name: Clone k
+  git:
+    repo: https://github.com/supercrabtree/k.git
+    dest: "{{ home_directory.stdout }}/k"
+
+- name: Clone prezto
+  git:
+    repo: https://github.com/tunght13488/prezto.git
+    dest: "{{ home_directory.stdout }}/.zprezto"
+    update: no
+
+- name: Symlink configurations
+  shell: |
+    stow git
+    stow vim
+    stow tmux
+    stow other
+  args:
+    chdir: "{{home_directory.stdout}}/dotfiles"
+
+# - name: Run VIM install plugin
+#   shell: |
+#     vim +PluginInstall +qall
+#   args:
+#     chdir: "{{home_directory.stdout}}/dotfiles"
+
+- name: Symlink prezto configuration
+  file:
+    src: "{{ ansible_env.HOME}}/.zprezto/runcoms/{{item}}"
+    dest: "{{ ansible_env.HOME}}/.{{item}}"
+    state: link
+  with_items:
+    - zlogin
+    - zlogout
+    - zpreztorc
+    - zprofile
+    - zshenv
+    - zshrc
+  tags:
+    - prezto
+
+# - name: Change user shell
+#   become: yes
+#   user:
+#     name: "{{ ansible_user }}"
+#     shell: /bin/zsh
+#   tags:
+#     - prezto

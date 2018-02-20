@@ -1,0 +1,78 @@
+---
+- include_vars: 'zsh.yml'
+  tags:
+    - zsh
+
+- name: See if zsh is installed
+  shell: which zsh
+  register: zsh_installed
+  ignore_errors: yes
+
+- name: See if zsh is installed in /usr/local/bin
+  shell: which /usr/local/bin/zsh
+  register: zsh_installed
+  ignore_errors: yes
+  when: zsh_installed|failed
+
+- name: Install dependencies
+  become: yes
+  yum:
+    name: '{{ item }}'
+    state: latest
+  with_items:
+    - gcc
+    - ncurses-devel
+    - readline-devel
+    - pcre-devel
+    - zlib-devel
+  when: zsh_installed|failed
+
+- name: Create temporary directory for zsh build
+  shell: mktemp -d
+  register: zsh_temp_dir
+  when: zsh_installed|failed
+
+- name: Download zsh source
+  get_url: url={{ zsh_src_url }} dest={{ zsh_temp_dir.stdout }}/{{ zsh_package }}
+  when: zsh_installed|failed
+
+- name: Extract zsh source
+  shell: >
+    chdir={{ zsh_temp_dir.stdout }}
+    tar xf {{ zsh_package }}
+  when: zsh_installed|failed
+
+- name: Make zsh
+  shell: >
+    chdir={{ zsh_temp_dir.stdout }}/{{ zsh_src_dir }}
+    ./configure --prefix=/usr --bindir=/bin --sysconfdir=/etc/zsh --enable-etcdir=/etc/zsh
+    && make
+  when: zsh_installed|failed
+
+- name: Install zsh
+  become: yes
+  shell: >
+    chdir={{ zsh_temp_dir.stdout }}/{{ zsh_src_dir }}
+    make install
+  when: zsh_installed|failed
+
+- name: Delete temporary directory for zsh build
+  shell: rm -rf {{ zsh_temp_dir.stdout }}
+  when: zsh_installed|failed
+
+- name: Add Zsh to list of shells
+  become: yes
+  lineinfile:
+    path: /etc/shells
+    regexp: 'zsh'
+    line: '/bin/zsh'
+  when: zsh_installed|failed
+
+- name: Allow reading of zsh folders
+  become: yes
+  shell: >
+    find {{ item }} -type d -exec chmod 0755 {} \;
+  with_items:
+    - /usr/lib/zsh
+    - /usr/share/zsh
+  when: zsh_installed|failed

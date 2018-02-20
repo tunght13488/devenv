@@ -1,0 +1,8 @@
+__common_packages:
+  - base-devel
+  - zsh
+  - git
+  - tmux
+  - vim
+  - stow
+  - sublime-text
