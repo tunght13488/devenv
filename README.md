@@ -1,5 +1,5 @@
 # Build whole system
 
 ```
-ansible-playbook -i "localhost," devenv.yml
+ansible-playbook -i "localhost," --ask-become-pass devenv.yml
 ```
